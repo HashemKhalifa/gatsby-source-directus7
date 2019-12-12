@@ -1,5 +1,5 @@
 import DirectusSDK from '@directus/sdk-js';
-import { info, warn, error } from './process';
+import { error, info, warn } from './process';
 
 /**
  * Class with methods for fetching data from Directus
@@ -69,8 +69,7 @@ export default class DirectusFetcher {
             collections.map(async collection => {
                 const collectionName = collection.collection;
                 try {
-                    const items = await this.getItemsForCollection(collectionName);
-                    entities[collectionName] = items;
+                    entities[collectionName] = await this.getItemsForCollection(collectionName);
                 } catch (e) {
                     error(`Error fetching entities for Collection ${collectionName}: `, e);
                 }
@@ -100,7 +99,7 @@ export default class DirectusFetcher {
      */
     async getItemsForCollection(collectionName) {
         try {
-            const itemsData = await this.client.getItems(collectionName, { limit: '-1' });
+            const itemsData = await this.client.getItems(collectionName, { limit: -1 });
 
             if (!this.targetStatus) {
                 return itemsData.data;
@@ -182,7 +181,9 @@ export default class DirectusFetcher {
         try {
             // Directus SDK doesn't yet support fetching files via a
             // dedicated method yet but this works just as well
-            const filesData = await this.client.get('files', { limit: '-1' });
+            const filesData = await this.client.getFiles({
+                limit: -1,
+            });
             return filesData.data;
         } catch (e) {
             error('gatsby-source-directus: Error while fetching files: ', e);
