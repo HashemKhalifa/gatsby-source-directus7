@@ -14,7 +14,17 @@ import {
 
 exports.sourceNodes = async (
     { actions, store, cache, createNodeId },
-    { url, project, email, password, targetStatus, defaultStatus },
+    {
+        url,
+        project,
+        email,
+        password,
+        targetStatus,
+        defaultStatus,
+        downloadFilesToLocal,
+        removeWarning,
+        removeInfo,
+    },
 ) => {
     info(`Started logging for ${'gatsby-source-directus7'.blue}.`);
     const { createNode } = actions;
@@ -42,14 +52,18 @@ exports.sourceNodes = async (
 
     info('Downloading Directus files to Gatsby build cache...');
     const nodeFilesData = prepareFileNodes(allFilesData);
-    const nodeFiles = await createNodesFromFiles(nodeFilesData, createNode, async f =>
-        createRemoteFileNode({
-            url: f.data.full_url,
-            store,
-            cache,
-            createNode,
-            createNodeId,
-        }),
+    const nodeFiles = await createNodesFromFiles(
+        nodeFilesData,
+        createNode,
+        async f =>
+            createRemoteFileNode({
+                url: f.data.full_url,
+                store,
+                cache,
+                createNode,
+                createNodeId,
+            }),
+        downloadFilesToLocal,
     );
     if (nodeFiles.length === allFilesData.length) {
         success(`Downloaded all ${nodeFiles.length.toString().yellow} files from Directus!`);
@@ -75,10 +89,22 @@ exports.sourceNodes = async (
 
     info('Mapping Directus relations to Items...');
     const nodeEntities = prepareNodes(entities);
-    const relationMappedEntities = mapRelations(nodeEntities, relations, nodeFiles);
+    const relationMappedEntities = mapRelations(
+        nodeEntities,
+        relations,
+        nodeFiles,
+        removeWarning,
+        removeInfo,
+    );
 
     info('Mapping Directus files to Items...');
-    const mappedEntities = mapFilesToNodes(nodeFiles, allCollectionsData, relationMappedEntities);
+    const mappedEntities = mapFilesToNodes(
+        nodeFiles,
+        allCollectionsData,
+        relationMappedEntities,
+        removeWarning,
+        removeInfo,
+    );
 
     info('Generating GraphQL nodes...');
     await createNodesFromEntities(mappedEntities, createNode);
